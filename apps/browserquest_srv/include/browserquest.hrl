@@ -2,19 +2,38 @@
 -record(cp, {id, x, y, w, h}).
 -record(mobarea, {id, x, y, w, h, type, nb}).
 -record(player_state, {
-	  id,
-	  name,
-	  armor,
-	  weapon,
-	  hitpoints,
-	  pos_x,
-	  pos_y,
-	  checkpoint,
-	  zone,
-	  actionlist,
-	  target,
-	  local_cache
-	 }).
+        id,
+        name,
+        armor,
+        weapon,
+        hitpoints,
+        pos_x,
+        pos_y,
+        checkpoint,
+        zone,
+        actionlist,
+        target,
+        local_cache
+    }).
+-record(mob_state, {id,
+        type,
+        hitpoints,
+        pos_x, 
+        pos_y,
+        armor,
+        weapon,
+        hate,
+        hate_counter,
+        item,
+        respawn_timout,
+        return_timeout,
+        orientation, %TODO initalize in init
+        attackers = [],
+        range,
+        target,
+        zone
+    }).
+
 
 -define(ZONEWIDTH, 28).
 -define(ZONEHEIGHT, 12).

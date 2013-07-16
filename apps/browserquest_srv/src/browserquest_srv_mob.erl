@@ -20,25 +20,6 @@
 
 -define(SERVER, ?MODULE). 
 
--record(state, {id,
-                type,
-                hitpoints,
-                pos_x, 
-                pos_y,
-                armor,
-                weapon,
-                hate,
-                hate_counter,
-                item,
-                respawn_timout,
-                return_timeout,
-                orientation, %TODO initalize in init
-                attackers = [],
-                range,
-                target,
-		zone
-            }).
-
 %%%===================================================================
 %%% API
 %%%===================================================================
@@ -72,24 +53,24 @@ init([BinType, X, Y]) ->
     Orientation = random:uniform(4),
     State = do_init(
 	      Type, 
-	      #state{id = Id, type = Type,
+	      #mob_state{id = Id, type = Type,
 		     pos_x = X, pos_y = Y,
 		     orientation = Orientation}
 	     ),
 
     browserquest_srv_entity_handler:register(Zone, Type, Id, {action, [false,
                 ?SPAWN, Id, Type, X, Y]}),
-    {ok, State#state{zone = Zone, id = Id, type = Type}}.
+    {ok, State#mob_state{zone = Zone, id = Id, type = Type}}.
 
 
-handle_call({get_stats}, _From, State = #state{id = Id, weapon = Weapon, armor = Armor}) ->
+handle_call({get_stats}, _From, State = #mob_state{id = Id, weapon = Weapon, armor = Armor}) ->
     {reply, {ok, {Id, Weapon, Armor}}, State};
 
 handle_call(Request, From, State) ->
     browserquest_srv_util:unexpected_call(?MODULE, Request, From, State),
     {reply, ok, State}.
 
-handle_cast({tick}, State = #state{hate = _Hate, hitpoints = HP}) ->
+handle_cast({tick}, State = #mob_state{hate = _Hate, hitpoints = HP}) ->
     case HP of
 	Dead when Dead =< 0 ->
 	    die;
@@ -100,11 +81,11 @@ handle_cast({tick}, State = #state{hate = _Hate, hitpoints = HP}) ->
 
 handle_cast({event, From, ?WARRIOR,
              {action, [?MOVE, _Id, ?WARRIOR, X, Y, _Name, _Orient, _Armor, _Weapon]}},
-            State = #state{range = Range, pos_x = PX, pos_y = PY, hate = Hate}) 
+            State = #mob_state{range = Range, pos_x = PX, pos_y = PY, hate = Hate}) 
   when Hate =:= [] andalso ((PX-Range < X andalso X < (PX+Range))
                             orelse ((PY-Range) < Y andalso Y < (PY+Range))) ->
     %% Hates on for you
-    {noreply, State#state{hate = [From]}};
+    {noreply, State#mob_state{hate = [From]}};
 
 handle_cast({event, _From, ?WARRIOR, {action, [?MOVE, _Id, ?WARRIOR, _X, _Y, _Name,
         _Orient, _Armor, _Weapon]}}, State) ->
@@ -114,37 +95,38 @@ handle_cast({event, _From, ?WARRIOR, {action, [?MOVE, _Id, ?WARRIOR, _X, _Y, _Na
 
 handle_cast({event, _From, ?WARRIOR, {action, [?ATTACK, Id]}}, State) ->
     %% Hates on for you
-    lager:debug("RETALIATE!", [State#state.id, Id]),
-    browserquest_srv_entity_handler:event(State#state.zone, State#state.type,
-        {action, [?ATTACK, State#state.id]}),
+    lager:debug("RETALIATE!", [State#mob_state.id, Id]),
+    browserquest_srv_entity_handler:event(State#mob_state.zone,
+        State#mob_state.type,
+        {action, [?ATTACK, State#mob_state.id]}),
     {noreply, State};
 
 %% A hero have spawned in our zone
 handle_cast({event, From, ?WARRIOR, 
              {action, [_, ?SPAWN, _Id, ?WARRIOR, _X, _Y, _Name, _Orient, _Armor, _Weapon]}}, 
-            State = #state{id = Id, type = Type, pos_x = X, pos_y = Y}) ->
+            State = #mob_state{id = Id, type = Type, pos_x = X, pos_y = Y}) ->
     gen_server:cast(From, {event, self(), Id, {action, [false, ?SPAWN, Id, Type, X, Y]}}),
     {noreply, State};
 
 handle_cast({event, From, ?WARRIOR, 
              {action, [?ATTACK, Target]}}, 
-            State = #state{zone = Zone, type = Type, id = Id}) ->
+            State = #mob_state{zone = Zone, type = Type, id = Id}) ->
     case erlang:integer_to_list(Id) of
 	Target ->
 	    %% I'm gonna KILL you
 	    browserquest_srv_entity_handler:event(
 	      Zone, Type, {action, [?ATTACK, Id]}),
-	    {noreply, State#state{hate = [From]}};
+	    {noreply, State#mob_state{hate = [From]}};
 	_ ->
 	    {noreply, State}
     end;
 
 handle_cast({receive_damage, Amount}, 
-            State = #state{id = Id, zone = Zone, type = Type, hitpoints = HP,
+            State = #mob_state{id = Id, zone = Zone, type = Type, hitpoints = HP,
                            item = Item, pos_x = X, pos_y = Y}) ->
     lager:debug("Receiving damage: ~p", [Amount]),
     Total = HP - Amount,
-    NewState = State#state{hitpoints = Total},
+    NewState = State#mob_state{hitpoints = Total},
     case Total =< 0 of
         true ->
 	    browserquest_srv_entity_handler:event(
@@ -197,7 +179,7 @@ do_init(?RAT, State) ->
              {?BURGER, 15},
              {?FLASK, 55}],
 
-    State#state{hitpoints = 25,
+    State#mob_state{hitpoints = 25,
                 item = item(Drops, random:uniform(100)),
                 armor = ?CLOTHARMOR,
                 range = 1,
@@ -208,7 +190,7 @@ do_init(?SKELETON, State) ->
              {?MAILARMOR, 35},
              {?FLASK, 75}],
 
-    State#state{hitpoints = 110,
+    State#mob_state{hitpoints = 110,
                 item = item(Drops, random:uniform(100)),
                 armor = ?LEATHERARMOR,
 		range = 3,
@@ -219,7 +201,7 @@ do_init(?GOBLIN, State) ->
              {?MAILARMOR, 35},
              {?FLASK, 75}],
 
-    State#state{hitpoints = 90,
+    State#mob_state{hitpoints = 90,
                 item = item(Drops, random:uniform(100)),
                 armor = ?LEATHERARMOR,
 		range = 3,
@@ -231,7 +213,7 @@ do_init(?OGRE, State) ->
              {?MORNINGSTAR, 55},
              {?FLASK, 100}],
 
-    State#state{hitpoints = 200,
+    State#mob_state{hitpoints = 200,
                 item = item(Drops, random:uniform(100)),
                 armor = ?MAILARMOR,
 		range = 3,
@@ -242,7 +224,7 @@ do_init(?SPECTRE, State) ->
              {?FLASK, 65},
              {?REDARMOR, 100}],
 
-    State#state{hitpoints = 250,
+    State#mob_state{hitpoints = 250,
                 item = item(Drops, random:uniform(100)),
                 armor = ?LEATHERARMOR,
 		range = 2,
@@ -251,7 +233,7 @@ do_init(?DEATHKNIGHT, State) ->
     Drops = [{?BURGER, 95},
              {?FIREPOTION, 100}],
 
-    State#state{hitpoints = 250,
+    State#mob_state{hitpoints = 250,
                 item = item(Drops, random:uniform(100)),
                 armor = ?MAILARMOR,
 		range = 5,
@@ -262,7 +244,7 @@ do_init(?CRAB, State) ->
              {?AXE, 35},
              {?FLASK, 85}],
 
-    State#state{hitpoints = 60,
+    State#mob_state{hitpoints = 60,
                 item = item(Drops, random:uniform(100)),
                 armor = ?LEATHERARMOR,
 		range = 5,
@@ -273,7 +255,7 @@ do_init(?SNAKE, State) ->
              {?MAILARMOR, 25},
              {?FLASK, 75}],
 
-    State#state{hitpoints = 60,
+    State#mob_state{hitpoints = 60,
                 item = item(Drops, random:uniform(100)),
                 armor = ?LEATHERARMOR,
 		range = 3,
@@ -284,7 +266,7 @@ do_init(?SKELETON2, State) ->
              {?PLATEARMOR, 35},
              {?FLASK, 95}],
 
-    State#state{hitpoints = 200,
+    State#mob_state{hitpoints = 200,
                 item = item(Drops, random:uniform(100)),
                 armor = ?MAILARMOR,
 		range = 4,
@@ -295,7 +277,7 @@ do_init(?EYE, State) ->
              {?REDARMOR, 35},
              {?FLASK, 85}],
 
-    State#state{hitpoints = 200,
+    State#mob_state{hitpoints = 200,
                 item = item(Drops, random:uniform(100)),
                 armor = ?MAILARMOR,
 		range = 1,
@@ -305,7 +287,7 @@ do_init(?BAT, State) ->
              {?AXE, 15},
              {?FLASK, 65}],
 
-    State#state{hitpoints = 80,
+    State#mob_state{hitpoints = 80,
                 item = item(Drops, random:uniform(100)),
                 armor = ?LEATHERARMOR,
 		range = 2,
@@ -315,13 +297,13 @@ do_init(?WIZARD, State) ->
              {?PLATEARMOR, 25},
              {?FLASK, 75}],
 
-    State#state{hitpoints = 100,
+    State#mob_state{hitpoints = 100,
                 item = item(Drops, random:uniform(100)),
                 armor = ?LEATHERARMOR,
 		range = 5,
                 weapon = ?AXE};
 do_init(?BOSS, State) ->
-    State#state{hitpoints = 100,
+    State#mob_state{hitpoints = 100,
                 item = ?GOLDENSWORD,
                 armor = ?LEATHERARMOR,
                 range = 9,
