@@ -11,7 +11,6 @@
 
 start(_StartType, _StartArgs) ->
 
-    application:start(lager),
     lager:set_loglevel(lager_console_backend, debug),
     
     %% {Host, list({Path, Handler, Opts})}
