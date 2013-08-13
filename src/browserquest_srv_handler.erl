@@ -9,12 +9,12 @@
 -compile(export_all).
 
 -behaviour(cowboy_http_handler).  
--behaviour(cowboy_http_websocket_handler). 
+-behaviour(cowboy_websocket_handler). 
 
 -include("../include/browserquest.hrl").
 
 % Behaviour cowboy_http_handler  
--export([init/3, handle/2, terminate/2]).  
+-export([init/3, handle/2, terminate/3]).  
   
 % Behaviour cowboy_http_websocket_handler  
 -export([  
@@ -48,7 +48,7 @@ handle(Req, State) ->
     ]),  
     {ok, Req2, State}.
   
-terminate(_Req, _State) ->  
+terminate(_Reason, _Req, _State) ->  
     ok.
   
 % Called for every new websocket connection.  
