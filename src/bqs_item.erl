@@ -5,11 +5,11 @@
 %%% @end
 %%% Created : 7 July 2012 by <gustav.simonsson@gmail.com>
 %%%-------------------------------------------------------------------
--module(browserquest_srv_item).
+-module(bqs_item).
 
 -behaviour(gen_server).
 
--include("../include/browserquest.hrl").
+-include("../include/bqs.hrl").
 %% API
 -export([create/4, start_link/4]).
 
@@ -38,24 +38,24 @@ pickup(ItemPid, PlayerState) ->
 %%% gen_server callbacks
 %%%===================================================================
 init([Zone, Item, Id, SpawnInfo]) ->
-    browserquest_srv_entity_handler:register(Zone, Item, Id, SpawnInfo),
+    bqs_entity_handler:register(Zone, Item, Id, SpawnInfo),
     {ok, #state{id = Item, zone = Zone}}.
 
 handle_call({pickup, PlayerState}, _From, 
             State = #state{id = Id, zone = Zone}) ->
-    browserquest_srv_entity_handler:unregister(Zone),
+    bqs_entity_handler:unregister(Zone),
     {stop, normal, new_player_state(Id, PlayerState), State};        
 handle_call(Request, From, State) ->
-    browserquest_srv_util:unexpected_call(?MODULE, Request, From, State),
+    bqs_util:unexpected_call(?MODULE, Request, From, State),
     Reply = ok,
     {reply, Reply, State}.
 
 handle_cast(Msg, State) ->
-    browserquest_srv_util:unexpected_cast(?MODULE, Msg, State),
+    bqs_util:unexpected_cast(?MODULE, Msg, State),
     {noreply, State}.
 
 handle_info(Info, State) ->
-    browserquest_srv_util:unexpected_info(?MODULE, Info, State),
+    bqs_util:unexpected_info(?MODULE, Info, State),
     {noreply, State}.
 
 terminate(_Reason, _State) ->

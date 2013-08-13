@@ -5,11 +5,11 @@
 %%% @end
 %%% Created : 7 July 2012 by <sir.sedrik@gmail.com>
 %%%-------------------------------------------------------------------
--module(browserquest_srv_mob).
+-module(bqs_mob).
 
 -behaviour(gen_server).
 
--include("../include/browserquest.hrl").
+-include("../include/bqs.hrl").
 
 %% API
 -export([start_link/3, receive_damage/2, get_stats/1]).
@@ -32,14 +32,14 @@ start_link(Type, X, Y) ->
 receive_damage(Pid, Amount) when is_pid(Pid) ->
     gen_server:cast(Pid, {receive_damage, Amount});
 receive_damage(Target, Amount) ->
-    {ok, Pid} = browserquest_srv_entity_handler:get_target(Target),
+    {ok, Pid} = bqs_entity_handler:get_target(Target),
     receive_damage(Pid, Amount).
 
 get_stats(Pid) when is_pid(Pid) ->
     lager:debug("Trying to get stats from Pid: ~p", [Pid]),
     gen_server:call(Pid, {get_stats});
 get_stats(Target) ->
-    {ok, Pid} = browserquest_srv_entity_handler:get_target(Target),
+    {ok, Pid} = bqs_entity_handler:get_target(Target),
     get_stats(Pid).
 
 
@@ -47,9 +47,9 @@ get_stats(Target) ->
 %%% gen_server callbacks
 %%%===================================================================
 init([BinType, X, Y]) ->
-    Id = browserquest_srv_entity_handler:generate_id("1"),
-    Zone = browserquest_srv_entity_handler:make_zone(X, Y),
-    Type = browserquest_srv_util:type_to_internal(BinType),
+    Id = bqs_entity_handler:generate_id("1"),
+    Zone = bqs_entity_handler:make_zone(X, Y),
+    Type = bqs_util:type_to_internal(BinType),
     Orientation = random:uniform(4),
     State = do_init(
 	      Type, 
@@ -58,7 +58,7 @@ init([BinType, X, Y]) ->
 		     orientation = Orientation}
 	     ),
 
-    browserquest_srv_entity_handler:register(Zone, Type, Id, {action, [false,
+    bqs_entity_handler:register(Zone, Type, Id, {action, [false,
                 ?SPAWN, Id, Type, X, Y]}),
     {ok, State#mob_state{zone = Zone, id = Id, type = Type}}.
 
@@ -67,7 +67,7 @@ handle_call({get_stats}, _From, State = #mob_state{id = Id, weapon = Weapon, arm
     {reply, {ok, {Id, Weapon, Armor}}, State};
 
 handle_call(Request, From, State) ->
-    browserquest_srv_util:unexpected_call(?MODULE, Request, From, State),
+    bqs_util:unexpected_call(?MODULE, Request, From, State),
     {reply, ok, State}.
 
 handle_cast({tick}, State = #mob_state{hate = _Hate, hitpoints = HP}) ->
@@ -96,7 +96,7 @@ handle_cast({event, _From, ?WARRIOR, {action, [?MOVE, _Id, ?WARRIOR, _X, _Y, _Na
 handle_cast({event, _From, ?WARRIOR, {action, [?ATTACK, Id]}}, State) ->
     %% Hates on for you
     lager:debug("RETALIATE!", [State#mob_state.id, Id]),
-    browserquest_srv_entity_handler:event(State#mob_state.zone,
+    bqs_entity_handler:event(State#mob_state.zone,
         State#mob_state.type,
         {action, [?ATTACK, State#mob_state.id]}),
     {noreply, State};
@@ -114,7 +114,7 @@ handle_cast({event, From, ?WARRIOR,
     case erlang:integer_to_list(Id) of
 	Target ->
 	    %% I'm gonna KILL you
-	    browserquest_srv_entity_handler:event(
+	    bqs_entity_handler:event(
 	      Zone, Type, {action, [?ATTACK, Id]}),
 	    {noreply, State#mob_state{hate = [From]}};
 	_ ->
@@ -129,9 +129,9 @@ handle_cast({receive_damage, Amount},
     NewState = State#mob_state{hitpoints = Total},
     case Total =< 0 of
         true ->
-	    browserquest_srv_entity_handler:event(
+	    bqs_entity_handler:event(
               Zone, Type, {action, [?DESPAWN, Id]}),
-	    browserquest_srv_entity_handler:unregister(Zone),
+	    bqs_entity_handler:unregister(Zone),
             drop_item(Item, X, Y),
 	    {stop, normal, NewState};
         false ->
@@ -139,11 +139,11 @@ handle_cast({receive_damage, Amount},
     end;
 
 handle_cast(Msg, State) ->
-    browserquest_srv_util:unexpected_cast(?MODULE, Msg, State),
+    bqs_util:unexpected_cast(?MODULE, Msg, State),
     {noreply, State}.
 
 handle_info(Info, State) ->
-    browserquest_srv_util:unexpected_info(?MODULE, Info, State),
+    bqs_util:unexpected_info(?MODULE, Info, State),
     {noreply, State}.
 
 terminate(_Reason, _State) ->
@@ -158,11 +158,11 @@ code_change(_OldVsn, State, _Extra) ->
 %%%===================================================================
 drop_item(Item, X, Y) ->
     %% Items start with 9
-    Id = browserquest_srv_entity_handler:generate_id("9"),
-    Zone = browserquest_srv_entity_handler:make_zone(X,Y),
+    Id = bqs_entity_handler:generate_id("9"),
+    Zone = bqs_entity_handler:make_zone(X,Y),
     SpawnInfo = [?SPAWN, Id, Item, X, Y],
     %% Remove apply, spawn item gen_server, call register from it
-    Fun = fun() -> browserquest_srv_item:create(Zone, Item, Id, SpawnInfo) end,
+    Fun = fun() -> bqs_item:create(Zone, Item, Id, SpawnInfo) end,
     spawn(Fun),
     ok.
 

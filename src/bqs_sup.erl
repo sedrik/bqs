@@ -6,7 +6,7 @@
 %%% @end
 %%% Created :  7 Jul 2012 by Niclas Axelsson <burbas@Niclass-MacBook-Pro.local>
 %%%-------------------------------------------------------------------
--module(browserquest_srv_sup).
+-module(bqs_sup).
 
 -behaviour(supervisor).
 
@@ -61,19 +61,19 @@ init([]) ->
     Type = worker,
     {ok, MapFile} = application:get_env(world_map),
     Map = 
-        {browserquest_srv_map,
-         {browserquest_srv_map, start_link, [MapFile]},
-         Restart, Shutdown, Type, [browserquest_srv_map]},
+        {bqs_map,
+         {bqs_map, start_link, [MapFile]},
+         Restart, Shutdown, Type, [bqs_map]},
 
     MobSup = 
-        {browserquest_srv_mob_sup,
-         {browserquest_srv_mob_sup, start_link, []},
-         Restart, Shutdown, Type, [browserquest_srv_mob_sup]},
+        {bqs_mob_sup,
+         {bqs_mob_sup, start_link, []},
+         Restart, Shutdown, Type, [bqs_mob_sup]},
     
     EntityHandler = 
-        {browserquest_srv_entity_handler,
-         {browserquest_srv_entity_handler, start_link, []},
-         Restart, Shutdown, Type, [browserquest_srv_entity_handler]},
+        {bqs_entity_handler,
+         {bqs_entity_handler, start_link, []},
+         Restart, Shutdown, Type, [bqs_entity_handler]},
     
     
     {ok, {SupFlags, [Map, MobSup, EntityHandler]}}.

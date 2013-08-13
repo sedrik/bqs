@@ -1,6 +1,6 @@
-{application, browserquest_srv,
+{application, bqs,
  [
-  {description, "Backend server for browserquest"},
+  {description, "Backend server for bqs"},
   {vsn, "0.1.0"},
   {registered, []},
   {applications, [
@@ -12,7 +12,7 @@
                   crypto,
                   syntax_tools
                  ]},
-  {mod, { browserquest_srv_app, []}},
+  {mod, { bqs_app, []}},
   {env, [
         {world_map, "world_map.json"},
 	{riak_ip, "127.0.0.1"},

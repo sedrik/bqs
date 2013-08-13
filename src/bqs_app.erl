@@ -1,4 +1,4 @@
--module(browserquest_srv_app).
+-module(bqs_app).
 
 -behaviour(application).
 
@@ -26,19 +26,19 @@ start(_StartType, _StartArgs) ->
 	end,
 
     Dispatch = [{'_', [
-        {'_', browserquest_srv_handler, []}
+        {'_', bqs_handler, []}
     ]}],
     
-%%    lager:debug("Starting browserquest_srv on port ~p", [ListeningPort]),
+%%    lager:debug("Starting bqs on port ~p", [ListeningPort]),
 
     %% Name, NbAcceptors, Transport, TransOpts, Protocol, ProtoOpts
     %% Listen in 10100/tcp for http connections.
-    ranch:start_listener(browserquest_srv_handler, 100,
+    ranch:start_listener(bqs_handler, 100,
         cowboy_tcp_transport, [{port, ListeningPort}],
         cowboy_http_protocol, [{dispatch, Dispatch}]
     ),
 
-    browserquest_srv_sup:start_link().
+    bqs_sup:start_link().
 
 stop(_State) ->
     ok.

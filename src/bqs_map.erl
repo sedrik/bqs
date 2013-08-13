@@ -5,11 +5,11 @@
 %%% @end
 %%% Created : 7 July 2012 by <gustav.simonsson@gmail.com>
 %%%-------------------------------------------------------------------
--module(browserquest_srv_map).
+-module(bqs_map).
 
 -behaviour(gen_server).
 
--include("../include/browserquest.hrl").
+-include("../include/bqs.hrl").
 %% API
 -export([start_link/1]).
 
@@ -46,7 +46,7 @@ tileid_to_pos(TileId) ->
 %%% gen_server callbacks
 %%%===================================================================
 init([MapName]) ->
-    File = code:priv_dir(browserquest_srv) ++ "/maps/" ++ MapName,
+    File = code:priv_dir(bqs) ++ "/maps/" ++ MapName,
     {ok, FileBin} = file:read_file(File),
     Json = mochijson3:decode(FileBin),
     Height = get_json_value("height", Json),  
@@ -95,16 +95,16 @@ handle_call({tileid_to_pos, TileId}, _From, #map{attributes = PL} = Map) ->
     TileToPos = proplists:get_value("tiletopos", PL),
     {reply, tileid_to_pos(TileId, TileToPos), Map};
 handle_call(Request, From, State) ->
-    browserquest_srv_util:unexpected_call(?MODULE, Request, From, State),
+    bqs_util:unexpected_call(?MODULE, Request, From, State),
     Reply = ok,
     {reply, Reply, State}.
 
 handle_cast(Msg, State) ->
-    browserquest_srv_util:unexpected_cast(?MODULE, Msg, State),
+    bqs_util:unexpected_cast(?MODULE, Msg, State),
     {noreply, State}.
 
 handle_info(Info, State) ->
-    browserquest_srv_util:unexpected_info(?MODULE, Info, State),
+    bqs_util:unexpected_info(?MODULE, Info, State),
     {noreply, State}.
 
 terminate(_Reason, _State) ->

@@ -5,13 +5,13 @@
 %%% @end
 %%% Created : 7 July 2012 by <gustav.simonsson@gmail.com>
 %%%-------------------------------------------------------------------
--module(browserquest_srv_handler).
+-module(bqs_handler).
 -compile(export_all).
 
 -behaviour(cowboy_http_handler).  
 -behaviour(cowboy_websocket_handler). 
 
--include("../include/browserquest.hrl").
+-include("../include/bqs.hrl").
 
 % Behaviour cowboy_http_handler  
 -export([init/3, handle/2, terminate/3]).  
@@ -22,7 +22,7 @@
     websocket_info/3, websocket_terminate/3  
 ]).  
 
--define(APP, browserquest_srv).
+-define(APP, bqs).
 
 -record(state, {
 	  riak,
@@ -80,7 +80,7 @@ websocket_handle({text, Msg}, Req, State) ->
 % With this callback we can handle other kind of  
 % messages, like binary.  
 websocket_handle(_Any, Req, State) ->  
-    browserquest_srv_util:unexpected_info(
+    bqs_util:unexpected_info(
       ?MODULE,"websocket binary received", State),
     {ok, Req, State}.  
 
@@ -94,7 +94,7 @@ websocket_info(<<"tick">>, Req, State = #state{player = undefined}) ->
     {ok, Req, State};
 
 websocket_info(<<"tick">>, Req, State = #state{player = Player}) ->
-    case browserquest_srv_player:get_surrondings(Player) of
+    case bqs_player:get_surrondings(Player) of
 	[] ->
 	    ok;
 	ActionList ->
@@ -114,7 +114,7 @@ websocket_info(Msg, Req, State) ->
 
 websocket_terminate(_Reason, _Req, #state{player = Player}) ->      
     lager:debug("Connection closed"),
-    browserquest_srv_player:stop(Player),
+    bqs_player:stop(Player),
     ok.
 
 %%%===================================================================
@@ -122,21 +122,21 @@ websocket_terminate(_Reason, _Req, #state{player = Player}) ->
 %%%===================================================================
 parse_action([?HELLO, Name, Armor, Weapon], State) ->
     %% This is a player call
-    {ok, Player} = browserquest_srv_player:start_link(Name, Armor, Weapon),
-    {ok, Status} = browserquest_srv_player:get_status(Player),
+    {ok, Player} = bqs_player:start_link(Name, Armor, Weapon),
+    {ok, Status} = bqs_player:get_status(Player),
     {json, [?WELCOME|Status], State#state{player = Player}};
 
 parse_action([?MOVE, X, Y], State = #state{player = Player}) ->
-    {ok, Status} = browserquest_srv_player:move(Player, X, Y),
+    {ok, Status} = bqs_player:move(Player, X, Y),
     lager:debug("MOVED ~p ~p", [X, Y]),
     {json, [?MOVE|Status], State};
 
 parse_action([?ATTACK, Target], State = #state{player = Player}) ->
-    ok = browserquest_srv_player:attack(Player, Target),
+    ok = bqs_player:attack(Player, Target),
     {ok, [], State};
 
 parse_action([?HIT, Target], State = #state{player = Player}) ->
-    {ok, Return} = browserquest_srv_player:hit(Player, Target),
+    {ok, Return} = bqs_player:hit(Player, Target),
 
     {json, Return, State};
 
@@ -144,26 +144,26 @@ parse_action([?DAMAGE, _Target], State = #state{player = _Player}) ->
     {ok, [], State};
 
 parse_action([?HURT, Attacker], State = #state{player = Player}) ->
-    {ok, Status} = browserquest_srv_player:hurt(Player, Attacker),
+    {ok, Status} = bqs_player:hurt(Player, Attacker),
     {json, Status, State};
 
 parse_action([?AGGRO, _Target], State = #state{player = _Player}) ->
     {ok, [], State};
 
 parse_action([?CHAT, Message], State = #state{player = Player}) ->
-    {ok, Return} = browserquest_srv_player:chat(Player, Message),
+    {ok, Return} = bqs_player:chat(Player, Message),
     {json, Return, State};
 
 parse_action([?TELEPORT, X, Y], State = #state{player = Player}) ->
-    {ok, Status} = browserquest_srv_player:move(Player, X, Y),
+    {ok, Status} = bqs_player:move(Player, X, Y),
     {json, [?TELEPORT|Status], State};
 
 parse_action([?CHECK, Value], State = #state{player = Player}) ->
-    browserquest_srv_player:set_checkpoint(Player, Value),
+    bqs_player:set_checkpoint(Player, Value),
     {ok, [], State};
 
 parse_action([?ZONE], State = #state{player = Player}) ->
-    browserquest_srv_player:update_zone(Player),
+    bqs_player:update_zone(Player),
     {ok, [], State};
 
 parse_action(ActionList, _State) ->

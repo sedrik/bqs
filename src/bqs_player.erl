@@ -5,11 +5,11 @@
 %%% @end
 %%% Created : 7 July 2012 by <gustav.simonsson@gmail.com>
 %%%-------------------------------------------------------------------
--module(browserquest_srv_player).
+-module(bqs_player).
 
 -behaviour(gen_server).
 
--include("../include/browserquest.hrl").
+-include("../include/bqs.hrl").
 
 %% API
 -export([
@@ -34,7 +34,7 @@
 -compile(export_all).
 
 -define(CALC_HP(ArmorLevel), 80 + ((ArmorLevel - 1) * 30)).
--define(APP, browserquest_srv).
+-define(APP, bqs).
 
 %%%===================================================================
 %%% API
@@ -79,14 +79,14 @@ stop(Pid) ->
 %%% gen_server callbacks
 %%%===================================================================
 init([Name, Armor, Weapon]) ->
-    Id = browserquest_srv_entity_handler:generate_id("5"),
+    Id = bqs_entity_handler:generate_id("5"),
     Hitpoints = ?CALC_HP(get_armor_lvl(Armor)),
 
-    CPs = browserquest_srv_map:get_attribute("startingAreas"),
+    CPs = bqs_map:get_attribute("startingAreas"),
     random:seed(erlang:now()),
     #cp{x = PosX, y = PosY} = lists:nth(random:uniform(length(CPs)), CPs),
     
-    Zone = browserquest_srv_entity_handler:make_zone(PosX, PosY),
+    Zone = bqs_entity_handler:make_zone(PosX, PosY),
 
     lager:debug("Player zone: ~p", [Zone]),
     {ok, #player_state{
@@ -109,18 +109,18 @@ handle_call({get_status}, _From,
                                   armor = Armor, weapon = Weapon}) ->
     Action = {action, [true, ?SPAWN, Id, 
                        ?WARRIOR, X, Y, Name, ?DOWN, Armor, Weapon]},
-    browserquest_srv_entity_handler:register(Zone, ?WARRIOR, Id, Action),
+    bqs_entity_handler:register(Zone, ?WARRIOR, Id, Action),
     {reply, {ok, [Id, Name, X, Y, HP]}, State};
 
 handle_call({move, X, Y}, _From, 
             State = #player_state{pos_x = OldX, pos_y = OldY,
                                   id = Id, zone = Zone}) ->
-    case browserquest_srv_map:is_out_of_bounds(X, Y) of
+    case bqs_map:is_out_of_bounds(X, Y) of
         true ->
 	    lager:debug("Moved to ~p ~p", [X, Y]),
             {reply, {ok, [Id, OldX, OldY]}, State};
         _ ->
-            browserquest_srv_entity_handler:event(
+            bqs_entity_handler:event(
               Zone, ?WARRIOR, {action, [?MOVE, Id, X, Y]}),
             {reply, {ok, [Id, X, Y]}, State#player_state{pos_x = X, pos_y = Y}}
     end;
@@ -133,11 +133,11 @@ handle_call({update_zone}, _From,
                                   armor = Armor, weapon = Weapon, 
                                   pos_x = X, pos_y = Y}) ->
     %% Delete old zone and insert the new one
-    NewZone = browserquest_srv_entity_handler:make_zone(X, Y),
-    browserquest_srv_entity_handler:unregister(OldZone),
+    NewZone = bqs_entity_handler:make_zone(X, Y),
+    bqs_entity_handler:unregister(OldZone),
     Action = {action, [true, ?SPAWN, Id, 
                        ?WARRIOR, X, Y, Name, ?DOWN, Armor, Weapon]},
-    browserquest_srv_entity_handler:register(NewZone, ?WARRIOR, Id, Action),
+    bqs_entity_handler:register(NewZone, ?WARRIOR, Id, Action),
     {reply, ok, State#player_state{zone = NewZone}};
 
 handle_call({get_zone}, _From, State = #player_state{zone = Zone}) ->
@@ -149,7 +149,7 @@ handle_call({get_surrondings}, _From,
 
 handle_call({chat, Message}, _From, State = #player_state{id = Id, zone = Zone}) ->
     Action = [?CHAT, Id, Message],
-    browserquest_srv_entity_handler:event(Zone, ?WARRIOR, {action, Action}),
+    bqs_entity_handler:event(Zone, ?WARRIOR, {action, Action}),
     {reply, {ok, Action}, State};
 
 handle_call({attack, Target}, _From, State = #player_state{zone = Zone}) ->
@@ -161,29 +161,29 @@ handle_call({attack, Target}, _From, State = #player_state{zone = Zone}) ->
 		[?ATTACK, Target]
 	end,
 
-    browserquest_srv_entity_handler:event(Zone, ?WARRIOR, {action, Action}),
+    bqs_entity_handler:event(Zone, ?WARRIOR, {action, Action}),
     {reply, ok, State};
 
 handle_call({hit, Target}, _From, 
             State = #player_state{local_cache = {Target, {Id, _, Armor}},
                                   weapon = Weapon}) ->
-    Dmg = browserquest_srv_entity_handler:calculate_dmg(
+    Dmg = bqs_entity_handler:calculate_dmg(
             get_armor_lvl(Armor), get_weapon_lvl(Weapon)),
-    browserquest_srv_mob:receive_damage(Target, Dmg),
+    bqs_mob:receive_damage(Target, Dmg),
     {reply, {ok, [?DAMAGE, Id, Dmg]}, State};
 
 handle_call({hit, Target}, _From, State = #player_state{weapon = Weapon}) ->
-    {ok, {Id, TargetWeapon, TargetArmor}} = browserquest_srv_mob:get_stats(Target),
-    Dmg = browserquest_srv_entity_handler:calculate_dmg(
+    {ok, {Id, TargetWeapon, TargetArmor}} = bqs_mob:get_stats(Target),
+    Dmg = bqs_entity_handler:calculate_dmg(
             get_armor_lvl(TargetArmor), get_weapon_lvl(Weapon)),
-    browserquest_srv_mob:receive_damage(Target, Dmg),
+    bqs_mob:receive_damage(Target, Dmg),
     {reply, {ok, [?DAMAGE, Id, Dmg]}, 
      State#player_state{local_cache = {Target, {Id, TargetWeapon, TargetArmor}}}};
    
 handle_call({hurt, Attacker}, _From, 
             State = #player_state{armor = Armor, hitpoints = HP, 
                                   local_cache = {_Target, {Attacker, TargetWeapon, _}}}) ->
-    Dmg = browserquest_srv_entity_handler:calculate_dmg(
+    Dmg = bqs_entity_handler:calculate_dmg(
             get_weapon_lvl(TargetWeapon), get_armor_lvl(Armor)),
     lager:debug("Received ~p damage. Have totally ~p", [Dmg, HP]),
     case HP-Dmg of
@@ -195,8 +195,8 @@ handle_call({hurt, Attacker}, _From,
 
 handle_call({hurt, Attacker}, _From, 
             State = #player_state{armor = Armor, hitpoints = HP}) ->
-    {ok, {Id, TargetWeapon, TargetArmor}} = browserquest_srv_mob:get_stats(Attacker),
-    Dmg = browserquest_srv_entity_handler:calculate_dmg(
+    {ok, {Id, TargetWeapon, TargetArmor}} = bqs_mob:get_stats(Attacker),
+    Dmg = bqs_entity_handler:calculate_dmg(
             get_weapon_lvl(TargetWeapon), get_armor_lvl(Armor)),
     lager:debug("Received ~p damage. Have totally ~p", [Dmg, HP]),
     case HP-Dmg of
@@ -207,7 +207,7 @@ handle_call({hurt, Attacker}, _From,
     end;
 
 handle_call(Request, From, State) ->
-    browserquest_srv_util:unexpected_call(?MODULE, Request, From, State),
+    bqs_util:unexpected_call(?MODULE, Request, From, State),
     Reply = ok,
     {reply, Reply, State}.
 
@@ -242,15 +242,15 @@ handle_cast({event, _From, _Type, {action, AC}},
     {noreply, State#player_state{actionlist = [AC|ActionList]}};
 
 handle_cast(Msg, State) ->
-    browserquest_srv_util:unexpected_cast(?MODULE, Msg, State),
+    bqs_util:unexpected_cast(?MODULE, Msg, State),
     {noreply, State}.
 
 handle_info(Info, State) ->
-    browserquest_srv_util:unexpected_info(?MODULE, Info, State),
+    bqs_util:unexpected_info(?MODULE, Info, State),
     {noreply, State}.
 
 terminate(_Reason, #player_state{zone = Zone}) ->
-    browserquest_srv_entity_handler:unregister(Zone),
+    bqs_entity_handler:unregister(Zone),
     ok.
 
 code_change(_OldVsn, State, _Extra) ->

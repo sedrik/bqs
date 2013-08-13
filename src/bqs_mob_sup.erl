@@ -6,7 +6,7 @@
 %%% Created : 8 July 2012 by <gustav.simonsson@gmail.com>
 %%%-------------------------------------------------------------------
 
--module(browserquest_srv_mob_sup).
+-module(bqs_mob_sup).
 
 -behaviour(supervisor).
 
@@ -47,7 +47,7 @@ add_child(MobType, X, Y) ->
     
     Mob = 
         {erlang:make_ref(),
-         {browserquest_srv_mob, start_link, [MobType, X, Y]},
-         Restart, Shutdown, ChildType, [browserquest_srv_mob]},
+         {bqs_mob, start_link, [MobType, X, Y]},
+         Restart, Shutdown, ChildType, [bqs_mob]},
     {ok, Pid} = supervisor:start_child(?SERVER, Mob),
     Pid.

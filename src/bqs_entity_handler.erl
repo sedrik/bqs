@@ -6,11 +6,11 @@
 %%% @end
 %%% Created :  8 Jul 2012 by Niclas Axelsson <burbas@Niclass-MacBook-Pro.local>
 %%%-------------------------------------------------------------------
--module(browserquest_srv_entity_handler).
+-module(bqs_entity_handler).
 
 -behaviour(gen_server).
 
--include("../include/browserquest.hrl").
+-include("../include/bqs.hrl").
 %% API
 -export([
 	 start_link/0,
@@ -94,7 +94,7 @@ move_zone(OldZone, NewZone) ->
 %% @end
 %%--------------------------------------------------------------------
 init([]) ->
-    Args = [fun add_mob/1, browserquest_srv_map:get_attribute("mobAreas")],
+    Args = [fun add_mob/1, bqs_map:get_attribute("mobAreas")],
     erlang:spawn(lists, foreach, Args),
     {ok, #state{zones = dict:new(), targets = dict:new()}}.
 
@@ -237,4 +237,4 @@ calculate_dmg(TargetArmor, SourceWeapon) ->
     end.
 
 add_mob(#mobarea{type = Type, x = X, y = Y}) ->
-    browserquest_srv_mob_sup:add_child(Type, X, Y).
+    bqs_mob_sup:add_child(Type, X, Y).

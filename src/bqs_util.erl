@@ -5,9 +5,9 @@
 %%% @end
 %%% Created : 7 July 2012 by <gustav.simonsson@gmail.com>
 %%%-------------------------------------------------------------------
--module(browserquest_srv_util).
+-module(bqs_util).
 
--include("../include/browserquest.hrl").
+-include("../include/bqs.hrl").
 
 -compile(export_all).
 
