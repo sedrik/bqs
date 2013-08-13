@@ -1,1 +1,1 @@
-erl -pa deps/*/ebin -pa ebin -eval "application:start(crypto), application:start(compiler), application:start(syntax_tools), application:start(lager), application:start(cowboy), application:start(browserquest_srv)."
+erl -pa deps/*/ebin -pa ebin -eval "browserquest_srv_app:start_ok(browserquest_srv)."
