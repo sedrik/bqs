@@ -33,7 +33,7 @@ start(_StartType, _StartArgs) ->
 
     %% Name, NbAcceptors, Transport, TransOpts, Protocol, ProtoOpts
     %% Listen in 10100/tcp for http connections.
-    cowboy:start_listener(browserquest_srv_handler, 100,
+    ranch:start_listener(browserquest_srv_handler, 100,
         cowboy_tcp_transport, [{port, ListeningPort}],
         cowboy_http_protocol, [{dispatch, Dispatch}]
     ),
