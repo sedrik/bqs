@@ -25,7 +25,6 @@
 -define(APP, bqs).
 
 -record(state, {
-	  riak,
 	  player,
 	  tick_time
 	 }).
