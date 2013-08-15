@@ -24,18 +24,14 @@ start(_StartType, _StartArgs) ->
 		Port
 	end,
 
-    Dispatch = [{'_', [
-        {'_', bqs_handler, []}
-    ]}],
-    
-%%    lager:debug("Starting bqs on port ~p", [ListeningPort]),
-
-    %% Name, NbAcceptors, Transport, TransOpts, Protocol, ProtoOpts
-    %% Listen in 10100/tcp for http connections.
-    ranch:start_listener(bqs_handler, 100,
-        cowboy_tcp_transport, [{port, ListeningPort}],
-        cowboy_http_protocol, [{dispatch, Dispatch}]
-    ),
+    lager:debug("Starting bqs on port ~p", [ListeningPort]),
+	Dispatch = cowboy_router:compile([
+		{'_', [
+			{"/", bqs_handler, []}
+			]}
+	]),
+	{ok, _} = cowboy:start_http(http, 100, [{port, ListeningPort}],
+		[{env, [{dispatch, Dispatch}]}]),
 
     bqs_sup:start_link().
 
