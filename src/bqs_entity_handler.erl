@@ -114,7 +114,6 @@ handle_call({register, Pid, Zone, Id}, _From, State = #state{targets = Targets, 
 				     end, [Pid], Zones),
 
     UpdatedTargets = dict:store(Id, Pid, Targets),
-
     {reply, ok, State#state{zones = UpdatedZones, targets = UpdatedTargets}};
 
 handle_call({unregister, Pid, Zone}, _From, State = #state{zones = Zones}) ->

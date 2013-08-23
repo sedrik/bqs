@@ -70,12 +70,13 @@ init([MapName]) ->
     RoamingAreas = lists:map(fun get_mobarea/1,
                          get_json_value("roamingAreas", Json)),
 
-    %% TODO will be used for spawning the static entities
-    {_,StaticEntities} = get_json_value("staticEntities", Json),
+    {struct, Entities} = get_json_value("staticEntities", Json),
+    StaticEntities = get_staticEntity(Entities, Width),
                             
     %spawn the enemies
     start_mob(RoamingAreas),
-    
+    start_mob(StaticEntities),
+
     Map = #map{checkpoints = Checkpoints,
                startingAreas = StartingAreas,
                height= Height,
@@ -136,6 +137,17 @@ get_mobarea(RoamingArea) ->
     [Id,X,Y,W,H,Type,Nb] = [get_json_value(A, RoamingArea) ||
                        A <- ["id","x","y","width","height","type","nb"]],
     #mobarea{id=Id,x=X,y=Y,w=W,h=H,type=Type,nb=Nb}.
+
+get_staticEntity([], _) ->
+    [];
+get_staticEntity([{TileId, <<"rat">> = Type} | Entities], Width) ->
+    {X, Y} = tileid_to_pos(list_to_integer(binary_to_list(TileId)), Width),
+    Id = random:uniform(1000) + length(Entities),
+    Nb = 1,
+    [#mobarea{id = Id, type = Type, x = X, y = Y, w = X, h = Y, nb=Nb} |
+     get_staticEntity(Entities, Width)];
+get_staticEntity([_ | Entities], Width) ->
+    get_staticEntity(Entities, Width).
 
 do_is_out_of_bounds(X, Y, #map{height = Height, width = Width}) ->
     (X < 1) or (X >= Width) or (Y < 1) or (Y >= Height).    
