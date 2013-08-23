@@ -16,7 +16,8 @@
          get_startingAreas/0,
          is_colliding/2,
          is_out_of_bounds/2,
-         tileid_to_pos/1
+         tileid_to_pos/1,
+         pos_to_tileid/2
         ]).
 
 %% gen_server callbacks
@@ -49,6 +50,9 @@ is_out_of_bounds(X, Y) ->
 tileid_to_pos(TileId) ->
     gen_server:call(?SERVER, {tileid_to_pos, TileId}).
 
+pos_to_tileid(X, Y) ->
+    gen_server:call(?SERVER, {pos_to_tileid, {X, Y}}).
+
 %%%===================================================================
 %%% gen_server callbacks
 %%%===================================================================
@@ -62,7 +66,6 @@ init([MapName]) ->
     ZoneHeight = ?ZONEHEIGHT,
 
     Grid = get_grid(Height, Width, get_json_value("collisions", Json)),
-    TileToPos = grid_to_tileid_lookup(Grid),
     
     Checkpoints = lists:map(fun get_checkpoint/1,
                             get_json_value("checkpoints", Json)),
@@ -81,7 +84,6 @@ init([MapName]) ->
                 {"groupWidth", trunc(Width / ZoneWidth)},
                 {"groupHeight", trunc(Height / ZoneHeight)},
                 {"grid", Grid},
-                {"tiletopos", TileToPos},
                 {"startingAreas", StartingAreas},
                 {"checkpoints", Checkpoints},
                 {"mobAreas", MobAreas},
@@ -104,9 +106,12 @@ handle_call({is_colliding, X, Y}, _From, #map{attributes = PL} = Map) ->
     {reply, do_is_colliding(X, Y, Grid), Map};
 handle_call({is_out_of_bounds, X, Y}, _From, #map{attributes = PL} = Map) ->
     {reply, do_is_out_of_bounds(X, Y, PL), Map};
-handle_call({tileid_to_pos, TileId}, _From, #map{attributes = PL} = Map) ->
-    TileToPos = proplists:get_value("tiletopos", PL),
-    {reply, tileid_to_pos(TileId, TileToPos), Map};
+handle_call({tileid_to_pos, TileId}, _From, #map{width = Width} = Map) ->
+    Res = tileid_to_pos(TileId, Width),
+    {reply, Res, Map};
+handle_call({pos_to_tileid, {X, Y}}, _From, #map{width = Width} = Map) ->
+    Res = pos_to_tileid(X, Y, Width),
+    {reply, Res, Map};
 handle_call(Request, From, State) ->
     bqs_util:unexpected_call(?MODULE, Request, From, State),
     Reply = ok,
@@ -174,12 +179,20 @@ do_is_out_of_bounds(X, Y, PL) ->
     Width = proplists:get_value("width", PL),
     (X < 1) or (X >= Width) or (Y < 1) or (Y >= Height).    
 
-tileid_to_pos(TileId, TileToPos) ->
-    {value, Pos} = gb_trees:lookup(TileId, TileToPos),
-    Pos.
+%% TileId starts at 1 and maps to {0,0}
+%% The TileId 0 is invalid because of this
+tileid_to_pos(0, _) ->
+    exit("Invalid TileId");
+tileid_to_pos(TileId, Width) ->
+    X = case TileId rem Width of
+        0 ->
+            Width - 1;
+        Rem ->
+            Rem -1
+    end,
+    Y = (TileId - 1) div Width,
+    {X, Y}.
 
-grid_to_tileid_lookup(Grid) ->
-    SwitchKv = fun({Pos, {TileId, _CollisionBit}}) -> {TileId, Pos} end,
-    gb_trees:from_orddict(lists:map(SwitchKv, gb_trees:to_list(Grid))).
-
-    
+%% Calculates the TileId for pos X,Y
+pos_to_tileid(X, Y, Width) ->
+    (Y * Width) + X + 1.
