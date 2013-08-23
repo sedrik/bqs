@@ -12,16 +12,16 @@
 -compile(export_all).
 
 unexpected_call(Module, Request, From, State) ->
-    lager:warning("[~p] Unexpected call, Request, From, State: ~p~n",
-                  [Module, {Request, From, State}]).
+    lager:warning("[~p] Unexpected call, Request: ~p, From: ~p, State: ~p~n",
+                  [Module, Request, From, State]).
 
 unexpected_cast(Module, Msg, State) ->
-    lager:warning("[~p] Unexpected cast, Msg, State: ~p~n",
-                  [Module, {Msg, State}]).
+    lager:warning("[~p] Unexpected cast, Msg: ~p, State: ~p~n",
+                  [Module, Msg, State]).
 
 unexpected_info(Module, Info, State) ->
-    lager:warning("[~p] Unexpected info, Info, State: ~p~n",
-                  [Module, {Info, State}]).
+    lager:warning("[~p] Unexpected info, Info ~p, State: ~p~n",
+                  [Module, Info, State]).
 
 type_to_internal(<<"rat">>) -> ?RAT;
 type_to_internal(<<"skeleton">>) -> ?SKELETON;
