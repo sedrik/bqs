@@ -11,13 +11,16 @@
 
 -include("../include/bqs.hrl").
 %% API
--export([start_link/1]).
+-export([start_link/1,
+         get_attribute/1,
+         is_colliding/2,
+         is_out_of_bounds/2,
+         tileid_to_pos/1
+        ]).
 
 %% gen_server callbacks
 -export([init/1, handle_call/3, handle_cast/2, handle_info/2,
          terminate/2, code_change/3]).
-
--compile(export_all).
 
 -define(SERVER, ?MODULE). 
 
