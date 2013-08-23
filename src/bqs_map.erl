@@ -58,8 +58,7 @@ init([MapName]) ->
     Json = mochijson3:decode(FileBin),
     Height = get_json_value("height", Json),  
     Width = get_json_value("width", Json),
-    ZoneWidth = ?ZONEWIDTH,
-    ZoneHeight = ?ZONEHEIGHT,
+    Collisions = get_json_value("collisions", Json),
 
     Checkpoints = lists:map(fun get_checkpoint/1,
                             get_json_value("checkpoints", Json)),
@@ -71,25 +70,18 @@ init([MapName]) ->
     RoamingAreas = lists:map(fun get_mobarea/1,
                          get_json_value("roamingAreas", Json)),
 
+    %% TODO will be used for spawning the static entities
     {_,StaticEntities} = get_json_value("staticEntities", Json),
                             
-    PropList = [{"width", Width}, {"height", Height},
-                {"zoneWidth", ZoneWidth}, {"zoneHeight", ZoneHeight},
-                {"groupWidth", trunc(Width / ZoneWidth)},
-                {"groupHeight", trunc(Height / ZoneHeight)},
-                {"startingAreas", StartingAreas},
-                {"checkpoints", Checkpoints},
-                {"mobAreas", RoamingAreas},
-                {"staticEntities", StaticEntities}
-               ],
-
     %spawn the enemies
     start_mob(RoamingAreas),
     
     Map = #map{checkpoints = Checkpoints,
                startingAreas = StartingAreas,
+               height= Height,
+               width = Width,
                json = Json,
-               attributes = PropList
+               collisions = Collisions
               },
     {ok, Map}.
 
@@ -97,8 +89,8 @@ handle_call(get_startingAreas, _From, Map) ->
     {reply, Map#map.startingAreas, Map};
 handle_call({is_colliding, X, Y}, _From, Map) ->
     {reply, do_is_colliding(X, Y, Map), Map};
-handle_call({is_out_of_bounds, X, Y}, _From, #map{attributes = PL} = Map) ->
-    {reply, do_is_out_of_bounds(X, Y, PL), Map};
+handle_call({is_out_of_bounds, X, Y}, _From, Map) ->
+    {reply, do_is_out_of_bounds(X, Y, Map), Map};
 handle_call({tileid_to_pos, TileId}, _From, #map{width = Width} = Map) ->
     Res = tileid_to_pos(TileId, Width),
     {reply, Res, Map};
@@ -145,9 +137,7 @@ get_mobarea(RoamingArea) ->
                        A <- ["id","x","y","width","height","type","nb"]],
     #mobarea{id=Id,x=X,y=Y,w=W,h=H,type=Type,nb=Nb}.
 
-do_is_out_of_bounds(X, Y, PL) ->
-    Height = proplists:get_value("height", PL),
-    Width = proplists:get_value("width", PL),
+do_is_out_of_bounds(X, Y, #map{height = Height, width = Width}) ->
     (X < 1) or (X >= Width) or (Y < 1) or (Y >= Height).    
 
 %% TileId starts at 1 and maps to {0,0}

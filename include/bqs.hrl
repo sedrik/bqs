@@ -1,5 +1,4 @@
--record(map, {checkpoints, height, width, json, startingAreas, attributes,
-              collisions}).
+-record(map, {checkpoints, height, width, json, startingAreas, collisions}).
 -record(cp, {id, x, y, w, h}).
 -record(mobarea, {id, x, y, w, h, type, nb}).
 -record(player_state, {
@@ -36,8 +35,6 @@
     }).
 
 
--define(ZONEWIDTH, 28).
--define(ZONEHEIGHT, 12).
 -define(PLAYER_BUCKET, <<"player">>).
 
 
