@@ -61,8 +61,6 @@ init([MapName]) ->
     ZoneWidth = ?ZONEWIDTH,
     ZoneHeight = ?ZONEHEIGHT,
 
-    Grid = get_grid(Height, Width, get_json_value("collisions", Json)),
-    
     Checkpoints = lists:map(fun get_checkpoint/1,
                             get_json_value("checkpoints", Json)),
 
@@ -79,7 +77,6 @@ init([MapName]) ->
                 {"zoneWidth", ZoneWidth}, {"zoneHeight", ZoneHeight},
                 {"groupWidth", trunc(Width / ZoneWidth)},
                 {"groupHeight", trunc(Height / ZoneHeight)},
-                {"grid", Grid},
                 {"startingAreas", StartingAreas},
                 {"checkpoints", Checkpoints},
                 {"mobAreas", RoamingAreas},
@@ -98,9 +95,8 @@ init([MapName]) ->
 
 handle_call(get_startingAreas, _From, Map) ->
     {reply, Map#map.startingAreas, Map};
-handle_call({is_colliding, X, Y}, _From, #map{attributes = PL} = Map) ->
-    Grid = proplists:get_value("grid", PL),
-    {reply, do_is_colliding(X, Y, Grid), Map};
+handle_call({is_colliding, X, Y}, _From, Map) ->
+    {reply, do_is_colliding(X, Y, Map), Map};
 handle_call({is_out_of_bounds, X, Y}, _From, #map{attributes = PL} = Map) ->
     {reply, do_is_out_of_bounds(X, Y, PL), Map};
 handle_call({tileid_to_pos, TileId}, _From, #map{width = Width} = Map) ->
@@ -134,25 +130,11 @@ code_change(_OldVsn, State, _Extra) ->
 get_json_value(Key, Json) ->
     mochijson3_helper:get_path_value([{1, binary:list_to_bin(Key)}], Json).
 
-get_grid(Height, Width, Collisions) ->
-    Grid = [{Y,X}||Y<-lists:seq(0,Height-1), X<-lists:seq(0,Width-1)],
-    GridTiled = lists:zip(Grid, lists:seq(0,length(Grid)-1)),
-    GridTree = gb_trees:from_orddict(GridTiled),
-    CollisionTree = gb_trees:from_orddict(lists:zip(Collisions, Collisions)),
-    gb_trees:map(set_array(CollisionTree), GridTree).
-
-set_array(Collisions) ->
-    fun(_Key, TileId) ->
-            case gb_trees:lookup(TileId, Collisions) of
-                none -> {TileId, 0};
-                _ ->
-                    {TileId, 1}
-            end
-    end.
-
-do_is_colliding(X, Y, Grid) ->    
-    {value, {_TileID, CollisionBit}} = gb_trees:lookup({X,Y}, Grid),
-    CollisionBit == 1.
+do_is_colliding(X, Y, Map) ->    
+    TileId = pos_to_tileid(X, Y, Map#map.width),
+    %% TODO, improve performance by putting collisions in an ets table and do a
+    %% ets lookup
+    lists:member(list_to_binary(integer_to_list(TileId)), Map#map.collisions).
 
 get_checkpoint(CP) ->
     [Id,X,Y,W,H] = [get_json_value(A, CP) || A <- ["id","x","y","w","h"]],
