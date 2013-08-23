@@ -13,6 +13,7 @@
 %% API
 -export([start_link/1,
          get_attribute/1,
+         get_startingAreas/0,
          is_colliding/2,
          is_out_of_bounds/2,
          tileid_to_pos/1
@@ -35,6 +36,9 @@ start_link(FilePath) ->
 %%%===================================================================
 get_attribute(Attribute) ->
     gen_server:call(?SERVER, {get_attribute, Attribute}).
+
+get_startingAreas() ->
+    gen_server:call(?SERVER, get_startingAreas).
 
 is_colliding(X, Y) ->
     gen_server:call(?SERVER, {is_colliding, X, Y}).
@@ -63,8 +67,8 @@ init([MapName]) ->
     Checkpoints = lists:map(fun get_checkpoint/1,
                             get_json_value("checkpoints", Json)),
 
-    %% Change this to a subset of checkpoints? Mysterious .s field
-    %% in cp in map.js.
+    %% TODO filter the checkpoints that have s = 1 so that we get the correct
+    %% startingAreas
     StartingAreas = Checkpoints,
 
     MobAreas = lists:map(fun get_mobarea/1,
@@ -84,9 +88,15 @@ init([MapName]) ->
                 {"staticEntities", StaticEntities}
                ],
     
-    Map = #map{json = Json, attributes = PropList},
+    Map = #map{checkpoints = Checkpoints,
+               startingAreas = StartingAreas,
+               json = Json,
+               attributes = PropList
+              },
     {ok, Map}.
 
+handle_call(get_startingAreas, _From, Map) ->
+    {reply, Map#map.startingAreas, Map};
 handle_call({get_attribute, Attribute}, _From, Map) ->
     {reply, do_get_attribute(Attribute, Map), Map};
 handle_call({is_colliding, X, Y}, _From, #map{attributes = PL} = Map) ->

@@ -1,4 +1,4 @@
--record(map, {json, attributes}).
+-record(map, {checkpoints, json, startingAreas, attributes}).
 -record(cp, {id, x, y, w, h}).
 -record(mobarea, {id, x, y, w, h, type, nb}).
 -record(player_state, {
