@@ -12,7 +12,6 @@
 -include("../include/bqs.hrl").
 %% API
 -export([start_link/1,
-         get_attribute/1,
          get_startingAreas/0,
          is_colliding/2,
          is_out_of_bounds/2,
@@ -35,9 +34,6 @@ start_link(FilePath) ->
 %%%===================================================================
 %%% Game API
 %%%===================================================================
-get_attribute(Attribute) ->
-    gen_server:call(?SERVER, {get_attribute, Attribute}).
-
 get_startingAreas() ->
     gen_server:call(?SERVER, get_startingAreas).
 
@@ -102,8 +98,6 @@ init([MapName]) ->
 
 handle_call(get_startingAreas, _From, Map) ->
     {reply, Map#map.startingAreas, Map};
-handle_call({get_attribute, Attribute}, _From, Map) ->
-    {reply, do_get_attribute(Attribute, Map), Map};
 handle_call({is_colliding, X, Y}, _From, #map{attributes = PL} = Map) ->
     Grid = proplists:get_value("grid", PL),
     {reply, do_is_colliding(X, Y, Grid), Map};
@@ -137,14 +131,6 @@ code_change(_OldVsn, State, _Extra) ->
 %%%===================================================================
 %%% Internal functions
 %%%===================================================================
-do_get_attribute(Attribute, #map{json = Json, attributes = PL}) ->
-    case proplists:is_defined(Attribute, PL) of
-        true ->
-            proplists:get_value(Attribute, PL);
-        _ ->
-            get_json_value(Attribute, Json)
-    end.
-
 get_json_value(Key, Json) ->
     mochijson3_helper:get_path_value([{1, binary:list_to_bin(Key)}], Json).
 
