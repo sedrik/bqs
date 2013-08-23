@@ -74,7 +74,7 @@ init([MapName]) ->
     %% startingAreas
     StartingAreas = Checkpoints,
 
-    MobAreas = lists:map(fun get_mobarea/1,
+    RoamingAreas = lists:map(fun get_mobarea/1,
                          get_json_value("roamingAreas", Json)),
 
     {_,StaticEntities} = get_json_value("staticEntities", Json),
@@ -86,9 +86,12 @@ init([MapName]) ->
                 {"grid", Grid},
                 {"startingAreas", StartingAreas},
                 {"checkpoints", Checkpoints},
-                {"mobAreas", MobAreas},
+                {"mobAreas", RoamingAreas},
                 {"staticEntities", StaticEntities}
                ],
+
+    %spawn the enemies
+    start_mob(RoamingAreas),
     
     Map = #map{checkpoints = Checkpoints,
                startingAreas = StartingAreas,
@@ -196,3 +199,16 @@ tileid_to_pos(TileId, Width) ->
 %% Calculates the TileId for pos X,Y
 pos_to_tileid(X, Y, Width) ->
     (Y * Width) + X + 1.
+
+start_mob([]) ->
+    ok;
+start_mob([#mobarea{nb = Nb} = Mob | Tail]) ->
+    [add_mob(Mob)|| _ <- lists:seq(1, Nb)],
+    start_mob(Tail).
+
+add_mob(#mobarea{type = Type, x = X, y = Y, w = X, h = Y}) ->
+    bqs_mob_sup:add_child(Type, X, Y);
+add_mob(#mobarea{type = Type, x = X, y = Y, w = W, h = H}) ->
+    StartX = X - 1 + random:uniform(W),
+    StartY = Y - 1 + random:uniform(H),
+    bqs_mob_sup:add_child(Type, StartX, StartY).

@@ -92,8 +92,6 @@ move_zone(OldZone, NewZone) ->
 %% @end
 %%--------------------------------------------------------------------
 init([]) ->
-    Args = [fun add_mob/1, bqs_map:get_attribute("mobAreas")],
-    erlang:spawn(lists, foreach, Args),
     {ok, #state{zones = dict:new(), targets = dict:new()}}.
 
 %%--------------------------------------------------------------------
@@ -233,6 +231,3 @@ calculate_dmg(TargetArmor, SourceWeapon) ->
 	_Neg ->
 	    random:uniform(3)
     end.
-
-add_mob(#mobarea{type = Type, x = X, y = Y}) ->
-    bqs_mob_sup:add_child(Type, X, Y).
