@@ -3,3 +3,4 @@ ebin/
 log/
 erl_crash.dump
 .eunit/
+tags

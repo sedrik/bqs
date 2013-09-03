@@ -29,8 +29,6 @@
 -export([init/1, handle_call/3, handle_cast/2, handle_info/2,
 	 terminate/2, code_change/3]).
 
--define(SERVER, ?MODULE). 
-
 -record(state, {
 	  zones :: dict(),
 	  targets :: dict(),
@@ -50,7 +48,7 @@
 %% @end
 %%--------------------------------------------------------------------
 start_link() ->
-    gen_server:start_link({local, ?SERVER}, ?MODULE, [], []).
+    gen_server:start_link({local, ?MODULE}, ?MODULE, [], []).
 
 register(Zone, Type, Id, SpawnInfo) ->
     Pid = self(),
@@ -94,8 +92,6 @@ move_zone(OldZone, NewZone) ->
 %% @end
 %%--------------------------------------------------------------------
 init([]) ->
-    Args = [fun add_mob/1, bqs_map:get_attribute("mobAreas")],
-    erlang:spawn(lists, foreach, Args),
     {ok, #state{zones = dict:new(), targets = dict:new()}}.
 
 %%--------------------------------------------------------------------
@@ -118,7 +114,6 @@ handle_call({register, Pid, Zone, Id}, _From, State = #state{targets = Targets, 
 				     end, [Pid], Zones),
 
     UpdatedTargets = dict:store(Id, Pid, Targets),
-
     {reply, ok, State#state{zones = UpdatedZones, targets = UpdatedTargets}};
 
 handle_call({unregister, Pid, Zone}, _From, State = #state{zones = Zones}) ->
@@ -235,6 +230,3 @@ calculate_dmg(TargetArmor, SourceWeapon) ->
 	_Neg ->
 	    random:uniform(3)
     end.
-
-add_mob(#mobarea{type = Type, x = X, y = Y}) ->
-    bqs_mob_sup:add_child(Type, X, Y).

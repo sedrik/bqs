@@ -76,7 +76,7 @@ init([]) ->
          Restart, Shutdown, Type, [bqs_entity_handler]},
     
     
-    {ok, {SupFlags, [Map, MobSup, EntityHandler]}}.
+    {ok, {SupFlags, [MobSup, EntityHandler, Map]}}.
 
 %%%===================================================================
 %%% Internal functions

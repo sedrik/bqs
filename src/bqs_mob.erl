@@ -58,7 +58,8 @@ init([BinType, X, Y]) ->
 		     orientation = Orientation}
 	     ),
 
-    bqs_entity_handler:register(Zone, Type, Id, {action, [false,
+    lager:debug("registering ~p {~p, ~p}", [BinType, X, Y]),
+    ok = bqs_entity_handler:register(Zone, Type, Id, {action, [false,
                 ?SPAWN, Id, Type, X, Y]}),
     {ok, State#mob_state{zone = Zone, id = Id, type = Type}}.
 
