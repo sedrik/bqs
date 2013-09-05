@@ -9,7 +9,12 @@
 
 -include("../include/bqs.hrl").
 
--compile(export_all).
+-export([unexpected_call/4,
+         unexpected_cast/3,
+         unexpected_info/3,
+         type_to_internal/1,
+         integer_to_boolean/1
+        ]).
 
 unexpected_call(Module, Request, From, State) ->
     lager:warning("[~p] Unexpected call, Request: ~p, From: ~p, State: ~p~n",
@@ -72,3 +77,8 @@ type_to_internal(<<"morningstar">>) -> ?MORNINGSTAR;
 type_to_internal(<<"axe">>) -> ?AXE;
 type_to_internal(<<"bluesword">>) -> ?BLUESWORD;
 type_to_internal(Unmapped) -> Unmapped.
+
+integer_to_boolean(0) ->
+    true;
+integer_to_boolean(Int) when is_integer(Int) ->
+    false.

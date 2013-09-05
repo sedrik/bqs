@@ -63,9 +63,7 @@ init([MapName]) ->
     Checkpoints = lists:map(fun get_checkpoint/1,
                             get_json_value("checkpoints", Json)),
 
-    %% TODO filter the checkpoints that have s = 1 so that we get the correct
-    %% startingAreas
-    StartingAreas = Checkpoints,
+    StartingAreas = [Cp || Cp <- Checkpoints, Cp#cp.s == true],
 
     RoamingAreas = lists:map(fun get_mobarea/1,
                          get_json_value("roamingAreas", Json)),
@@ -130,8 +128,10 @@ do_is_colliding(X, Y, Map) ->
     lists:member(list_to_binary(integer_to_list(TileId)), Map#map.collisions).
 
 get_checkpoint(CP) ->
-    [Id,X,Y,W,H] = [get_json_value(A, CP) || A <- ["id","x","y","w","h"]],
-    #cp{id=Id,x=X,y=Y,w=W,h=H}.
+    [Id, X, Y, W, H, S] = [get_json_value(A, CP) || A <- ["id", "x", "y", "w",
+                                                       "h", "s"]],
+    Start = bqs_util:integer_to_boolean(S),
+    #cp{id=Id, x=X, y=Y, w=W, h=H, s=Start}.
 
 get_mobarea(RoamingArea) ->
     [Id,X,Y,W,H,Type,Nb] = [get_json_value(A, RoamingArea) ||
