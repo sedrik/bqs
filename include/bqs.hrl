@@ -1,5 +1,5 @@
 -record(map, {checkpoints, height, width, json, startingAreas, collisions}).
--record(cp, {id, x, y, w, h}).
+-record(cp, {id, x, y, w, h, s}).
 -record(mobarea, {id, x, y, w, h, type, nb}).
 -record(player_state, {
         id,
