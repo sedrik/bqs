@@ -1,4 +1,5 @@
-Backend to BrowserQuest (http://browserquest.mozilla.org/) in Erlang/OTP.  [![Build Status](https://travis-ci.org/sedrik/BrowserQuest-Erlang.png?branch=master)](https://travis-ci.org/sedrik/BrowserQuest-Erlang) 
+Backend to BrowserQuest (http://browserquest.mozilla.org/) in Erlang/OTP.
+[![Build Status](https://travis-ci.org/sedrik/bqs.png?branch=master)](https://travis-ci.org/sedrik/bqs)
 
 We make use of Cowboy websocket handlers for communication with
 the BrowserQuest client. No modifications were done to the BrowserQuest Client
