@@ -23,7 +23,7 @@
 -export([init/1, handle_call/3, handle_cast/2, handle_info/2,
          terminate/2, code_change/3]).
 
--define(SERVER, ?MODULE). 
+-define(SERVER, ?MODULE).
 
 %%%===================================================================
 %%% API
@@ -56,7 +56,7 @@ init([MapName]) ->
     File = code:priv_dir(bqs) ++ "/maps/" ++ MapName,
     {ok, FileBin} = file:read_file(File),
     Json = mochijson3:decode(FileBin),
-    Height = get_json_value("height", Json),  
+    Height = get_json_value("height", Json),
     Width = get_json_value("width", Json),
     Collisions = get_json_value("collisions", Json),
 
@@ -70,7 +70,7 @@ init([MapName]) ->
 
     {struct, Entities} = get_json_value("staticEntities", Json),
     StaticEntities = get_staticEntity(Entities, Width),
-                            
+
     %spawn the enemies
     start_mob(RoamingAreas),
     start_mob(StaticEntities),
@@ -121,7 +121,7 @@ code_change(_OldVsn, State, _Extra) ->
 get_json_value(Key, Json) ->
     mochijson3_helper:get_path_value([{1, binary:list_to_bin(Key)}], Json).
 
-do_is_colliding(X, Y, Map) ->    
+do_is_colliding(X, Y, Map) ->
     TileId = pos_to_tileid(X, Y, Map#map.width),
     %% TODO, improve performance by putting collisions in an ets table and do a
     %% ets lookup
@@ -150,7 +150,7 @@ get_staticEntity([_ | Entities], Width) ->
     get_staticEntity(Entities, Width).
 
 do_is_out_of_bounds(X, Y, #map{height = Height, width = Width}) ->
-    (X < 1) or (X >= Width) or (Y < 1) or (Y >= Height).    
+    (X < 1) or (X >= Width) or (Y < 1) or (Y >= Height).
 
 %% TileId starts at 1 and maps to {0,0}
 %% The TileId 0 is invalid because of this
