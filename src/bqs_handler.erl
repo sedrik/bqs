@@ -51,7 +51,7 @@ websocket_init(tcp, Req, []) ->
     {ok, Req, #state{tick_time = TickTime}}.  
 
 websocket_handle({text, Msg}, Req, State) ->  
-    Args = mochijson3:decode(Msg),
+    Args = jiffy:decode(Msg),
     {Type, Reply, NewState} = parse_action(Args, State),
     
     case Type of
@@ -89,7 +89,7 @@ websocket_info(<<"tick">>, Req, State = #state{player = Player}) ->
     {ok, Req, State};
 
 websocket_info({json, Message}, Req, State) ->
-    Json = mochijson3:encode(Message),
+    Json = jiffy:encode(Message),
     lager:debug("Sending json: ~p", [Json]),
     {reply, {text, Json}, Req, State};
   

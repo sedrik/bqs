@@ -202,19 +202,13 @@ code_change(_OldVsn, State, _Extra) ->
 %%%===================================================================
 %%% Internal functions
 %%%===================================================================
-ensure_bin(Int) when is_integer(Int) ->
-    ensure_bin(erlang:integer_to_list(Int));
-ensure_bin(List) when is_list(List) ->
-    erlang:list_to_binary(List);
-ensure_bin(Bin) when is_binary(Bin) ->
-    Bin.
 
 %%%===================================================================
 %%% Exported functions
 %%%===================================================================
 make_zone(PosX, PosY) ->
     ZoneString = erlang:integer_to_list((( PosX div 28)+1)*((PosY div 12)+1)),
-    ensure_bin("ZONE"++ZoneString).
+    list_to_binary("ZONE"++ZoneString).
 
 generate_id(InitialValue) when is_list(InitialValue) ->
     random:seed(erlang:now()),
