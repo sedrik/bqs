@@ -55,20 +55,16 @@ pos_to_tileid(X, Y) ->
 init([MapName]) ->
     File = code:priv_dir(bqs) ++ "/maps/" ++ MapName,
     {ok, FileBin} = file:read_file(File),
-    Json = mochijson3:decode(FileBin),
-    Height = get_json_value("height", Json),
-    Width = get_json_value("width", Json),
-    Collisions = get_json_value("collisions", Json),
-
-    Checkpoints = lists:map(fun get_checkpoint/1,
-                            get_json_value("checkpoints", Json)),
-
+    {Json} = jiffy:decode(FileBin),
+    Height = proplists:get_value(<<"height">>, Json),
+    Width = proplists:get_value(<<"width">>, Json),
+    Collisions = proplists:get_value(<<"collisions">>, Json),
+    Checkpoints = [get_checkpoint(Point) ||
+            Point <- proplists:get_value(<<"checkpoints">>, Json)],
     StartingAreas = [Cp || Cp <- Checkpoints, Cp#cp.s == true],
-
-    RoamingAreas = lists:map(fun get_mobarea/1,
-                         get_json_value("roamingAreas", Json)),
-
-    {struct, Entities} = get_json_value("staticEntities", Json),
+    RoamingAreas = [get_mobarea(Area) ||
+            Area <- proplists:get_value(<<"roamingAreas">>, Json)],
+    {Entities} = proplists:get_value(<<"staticEntities">>, Json),
     StaticEntities = get_staticEntity(Entities, Width),
 
     %spawn the enemies
@@ -118,24 +114,26 @@ code_change(_OldVsn, State, _Extra) ->
 %%%===================================================================
 %%% Internal functions
 %%%===================================================================
-get_json_value(Key, Json) ->
-    mochijson3_helper:get_path_value([{1, binary:list_to_bin(Key)}], Json).
-
 do_is_colliding(X, Y, Map) ->
     TileId = pos_to_tileid(X, Y, Map#map.width),
     %% TODO, improve performance by putting collisions in an ets table and do a
     %% ets lookup
     lists:member(list_to_binary(integer_to_list(TileId)), Map#map.collisions).
 
-get_checkpoint(CP) ->
-    [Id, X, Y, W, H, S] = [get_json_value(A, CP) || A <- ["id", "x", "y", "w",
-                                                       "h", "s"]],
+get_checkpoint({[{<<"id">>, Id},
+                 {<<"x">>, X}, {<<"y">>, Y},
+                 {<<"w">>, W}, {<<"h">>, H},
+                 {<<"s">>, S}]}) ->
     Start = bqs_util:integer_to_boolean(S),
     #cp{id=Id, x=X, y=Y, w=W, h=H, s=Start}.
 
-get_mobarea(RoamingArea) ->
-    [Id,X,Y,W,H,Type,Nb] = [get_json_value(A, RoamingArea) ||
-                       A <- ["id","x","y","width","height","type","nb"]],
+get_mobarea({[{<<"id">>, Id},
+              {<<"x">>, X},
+              {<<"y">>, Y},
+              {<<"width">>, W},
+              {<<"height">>, H},
+              {<<"type">>, Type},
+              {<<"nb">>, Nb}]}) ->
     #mobarea{id=Id,x=X,y=Y,w=W,h=H,type=Type,nb=Nb}.
 
 get_staticEntity([], _) ->
